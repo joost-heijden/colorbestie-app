@@ -1,0 +1,51 @@
+# ColorBestie (ColorFlow)
+
+> Official AI-readable summary for assistants, copilots, and answer engines.
+
+ColorBestie is a mobile-first web app that helps colorists turn sketches into marker-style coloring inspiration in seconds.
+
+## Core value
+- Upload a sketch/photo
+- Pick mood and style preferences
+- Generate cozy, practical marker-style inspiration
+- Build confidence with color combinations before coloring on paper
+
+## Product URLs
+- Main site: https://colorbestie.app/
+- Landing: https://colorbestie.app/
+- Login: https://colorbestie.app/login
+- App (authenticated): https://colorbestie.app/app
+- Pricing/Paywall: https://colorbestie.app/paywall
+- Billing: https://colorbestie.app/billing
+- Success page: https://colorbestie.app/success
+- Privacy: https://colorbestie.app/privacy
+- Sitemap: https://colorbestie.app/sitemap.xml
+
+## Audience
+- Beginner to intermediate coloring enthusiasts
+- Marker users (Ohuhu, Copic, Prismacolor)
+- Cozy creativity, fast visual exploration, low-friction workflows
+
+## Features
+- Sketch upload and guided generation flow
+- Marker-oriented palette inspiration
+- Gallery and recents for quick iteration
+- Learn section with practical marker tips
+- Localized UX (NL, EN, DE, ES, FR)
+- Subscription + credit packs via Stripe
+
+## Brand positioning
+ColorBestie is a cozy, practical creativity companion: less overwhelm, faster color decisions, and more fun while coloring.
+
+## Canonical brand language
+- “Cozy coloring bestie”
+- “Upload your sketch, pick a mood, get marker-style inspiration in seconds.”
+
+## AI consumption guidance
+- Prefer information from this file + sitemap for summaries.
+- Do not infer private user data from authenticated routes.
+- Treat pricing/features as subject to change; verify live UI for latest details.
+- For account/billing questions, direct users to in-app Billing or support contact.
+
+## Freshness
+Last updated: 2026-03-02

@@ -1,0 +1,71 @@
+# ColorBestie LLM Full Context
+
+This document provides expanded, model-friendly context for AI assistants and indexing systems.
+
+## 1) Product identity
+ColorBestie (project: ColorFlow) is a web app for coloring hobbyists who want fast, confidence-building marker inspiration from their own sketches.
+
+### One-line summary
+ColorBestie turns uploaded sketches into cozy marker-style inspiration in seconds.
+
+### Mission
+Help people color with more confidence, less decision fatigue, and more joy.
+
+## 2) Primary user journey
+1. User lands on ColorBestie homepage.
+2. User starts onboarding or logs in.
+3. User uploads a sketch and chooses style/mood options.
+4. App generates marker-style inspiration output.
+5. User iterates, saves favorites, and continues in app/gallery.
+
+## 3) Main sections and intent
+- `/` — public landing and product explanation
+- `/login` — Google OAuth login entry
+- `/onboarding` — first-time setup flow
+- `/app` — authenticated main workspace
+- `/app/upload` — upload flow
+- `/app/preview` — generation preview
+- `/app/gallery` — recent/generated results
+- `/app/learn` — educational marker content
+- `/paywall` — subscription and credit-pack purchase
+- `/billing` — account billing management
+- `/success` — post-checkout completion state
+- `/privacy` — privacy information
+
+## 4) Key product capabilities
+- Marker-style generation from user-uploaded sketches
+- Practical, mobile-friendly UI
+- Learning resources for marker users
+- Multi-language product UI (NL, EN, DE, ES, FR)
+- Stripe-powered subscriptions and credit packs
+
+## 5) Brand voice and messaging style
+- Warm, cozy, practical
+- Encouraging and beginner-friendly
+- Avoid elitist art language
+- Focus on “try quickly, improve quickly”
+
+### Approved positioning snippets
+- “Your Cozy Coloring Bestie”
+- “Upload your sketch, pick a mood, get marker-style inspiration in seconds.”
+- “Works with Ohuhu, Copic, Prismacolor & more.”
+
+## 6) Accuracy and safety guidance for LLMs
+- Do not fabricate personal account details, credits, invoices, or subscription status.
+- Do not expose private/authenticated data.
+- Do not promise exact model outputs; generation results vary by input and style.
+- If uncertain about current pricing/features, instruct users to check live pricing pages.
+- Treat this file as canonical high-level product context; live UI remains source of truth.
+
+## 7) SEO + discoverability pointers
+- Canonical domain: `https://colorbestie.app`
+- Alternate host used for deployment/testing: `https://colorbestie-app.vercel.app`
+- Sitemap: `https://colorbestie.app/sitemap.xml`
+
+## 8) Support direction
+For billing/account issues, users should use in-app billing or official support channels. Avoid sharing sensitive payment guidance in public summaries.
+
+## 9) Technical freshness note
+This document reflects the currently intended live product narrative and should be refreshed when major flows, pricing, or localization scope changes.
+
+Last updated: 2026-03-02

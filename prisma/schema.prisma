@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String       @id @db.Uuid
+  email              String       @unique
+  supabaseAuthId     String?      @unique @map("supabase_auth_id")
+  name               String?
+  image              String?
+  displayName        String?      @map("display_name")
+  country            String?
+  skillLevel         String?      @map("skill_level")
+  onboardingComplete Boolean      @default(false) @map("onboarding_complete")
+  stripeCustomerId   String?      @map("stripe_customer_id")
+  entitlement        String       @default("none")
+  subscriptionStatus String       @default("inactive") @map("subscription_status")
+  subscriptionId     String?      @map("subscription_id")
+  currentPeriodEnd   DateTime?    @db.Timestamptz(6) @map("current_period_end")
+  disclaimerAcceptedAt DateTime?  @db.Timestamptz(6) @map("disclaimer_accepted_at")
+  disclaimerVersion  String?      @map("disclaimer_version")
+  createdAt          DateTime     @default(now()) @db.Timestamptz(6) @map("created_at")
+  updatedAt          DateTime     @updatedAt @db.Timestamptz(6) @map("updated_at")
+  generations        Generation[]
+
+  @@map("users")
+}
+
+model Generation {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  uploadPath String   @map("upload_path")
+  resultPath String   @map("result_path")
+  theme      String
+  createdAt  DateTime @default(now()) @db.Timestamptz(6) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("generations")
+}
