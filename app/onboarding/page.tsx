@@ -14,9 +14,12 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
 
   const stepParam = Array.isArray(params.step) ? params.step[0] : params.step;
   const editParam = Array.isArray(params.edit) ? params.edit[0] : params.edit;
+  const signedInParam = Array.isArray(params.signedIn) ? params.signedIn[0] : params.signedIn;
   const isMarkerEditMode = editParam === "markers" || stepParam === "5";
+  // After login callback: user just authenticated to complete onboarding — don't redirect to /app yet
+  const isCompletingOnboarding = signedInParam === "1";
 
-  if (currentUser?.id && !isMarkerEditMode) {
+  if (currentUser?.id && !isMarkerEditMode && !isCompletingOnboarding) {
     redirect("/app");
   }
 
