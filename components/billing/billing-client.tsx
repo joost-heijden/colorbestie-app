@@ -159,9 +159,9 @@ export function BillingClient({
         </div>
 
         {/* Plan change & credits via Stripe — hidden on native iOS (use App Store subscriptions instead) */}
-        {!isNative && (plan === "monthly" || plan === "yearly") ? (
+        {!isNative && (plan === "free" || plan === "monthly" || plan === "yearly") ? (
           <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-            <p className="text-xs uppercase tracking-wide text-[var(--muted)]">{isDutch ? "Plan wijzigen" : isGerman ? "Plan ändern" : isSpanish ? "Cambiar plan" : isFrench ? "Changer de forfait" : "Change plan"}</p>
+            <p className="text-xs uppercase tracking-wide text-[var(--muted)]">{plan === "free" ? (isDutch ? "Kies abonnement" : isGerman ? "Abo wählen" : isSpanish ? "Elegir suscripción" : isFrench ? "Choisir un abonnement" : "Choose subscription") : (isDutch ? "Plan wijzigen" : isGerman ? "Plan ändern" : isSpanish ? "Cambiar plan" : isFrench ? "Changer de forfait" : "Change plan")}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               {plan !== "monthly" ? (
                 <Button
@@ -221,14 +221,20 @@ export function BillingClient({
           ) : null}
 
           {isNative ? (
-            <Button
-              onClick={() => {
-                // Deep link to iOS Settings > Subscriptions
-                window.location.href = APPLE_SUBSCRIPTIONS_URL;
-              }}
-            >
-              {isDutch ? "Beheer abonnement (Apple)" : isGerman ? "Abo verwalten (Apple)" : isSpanish ? "Gestionar suscripción (Apple)" : isFrench ? "Gérer l'abonnement (Apple)" : "Manage subscription (Apple)"}
-            </Button>
+            plan === "free" ? (
+              <Button asChild>
+                <Link href="/paywall">{isDutch ? "Kies abonnement" : isGerman ? "Abo wählen" : isSpanish ? "Elegir suscripción" : isFrench ? "Choisir un abonnement" : "Choose subscription"}</Link>
+              </Button>
+            ) : (
+              <Button
+                onClick={() => {
+                  // Deep link to iOS Settings > Subscriptions
+                  window.location.href = APPLE_SUBSCRIPTIONS_URL;
+                }}
+              >
+                {isDutch ? "Beheer abonnement (Apple)" : isGerman ? "Abo verwalten (Apple)" : isSpanish ? "Gestionar suscripción (Apple)" : isFrench ? "Gérer l'abonnement (Apple)" : "Manage subscription (Apple)"}
+              </Button>
+            )
           ) : canManageBilling ? (
             <Button onClick={openPortal} disabled={loadingPortal}>
               {loadingPortal ? (isDutch ? "Stripe-portaal openen..." : isGerman ? "Stripe-Portal wird geöffnet..." : isSpanish ? "Abriendo portal de Stripe..." : isFrench ? "Ouverture du portail Stripe..." : "Opening Stripe portal...") : (isDutch ? "Open Stripe facturatieportaal" : isGerman ? "Stripe-Billing-Portal öffnen" : isSpanish ? "Abrir portal de facturación de Stripe" : isFrench ? "Ouvrir le portail de facturation Stripe" : "Open Stripe billing portal")}
