@@ -12,11 +12,13 @@ import { useColorBestie } from "@/components/app/colorbestie-provider";
 import { getLearnProgress, updateStreak } from "@/lib/learn-progress";
 
 type Generation = { id: string; resultUrl: string | null; thumbUrl?: string | null; theme: string };
-type MeResponse = { usage?: { creditsRemaining?: number; freeTrialRemaining?: number }, user?: { entitlement?: string; subscriptionStatus?: string } };
+type MeResponse = { usage?: { creditsRemaining?: number; freeTrialRemaining?: number }, user?: { id?: string; entitlement?: string; subscriptionStatus?: string } };
 type HomeCache = { creditsRemaining: number | null; freeTrialRemaining: number | null; recent: Generation[]; updatedAt: number };
 
 const STREAK_MILESTONES = [3, 7, 14, 30, 60, 100];
 const HOME_CACHE_KEY = "colorbestie:home-cache:v1";
+const NO_SUB_LOGIN_COUNT_KEY_PREFIX = "colorbestie:no-sub-login-count:";
+const NO_SUB_SESSION_COUNTED_KEY_PREFIX = "colorbestie:no-sub-session-counted:";
 
 function readHomeCache(): HomeCache | null {
   if (typeof window === "undefined") return null;
@@ -54,6 +56,35 @@ function writeHomeCache(next: Partial<HomeCache>) {
   }
 }
 
+function shouldShowNoSubBanner(userId: string, hasPaidAccess: boolean) {
+  if (typeof window === "undefined") return false;
+
+  const countKey = `${NO_SUB_LOGIN_COUNT_KEY_PREFIX}${userId}`;
+  const sessionKey = `${NO_SUB_SESSION_COUNTED_KEY_PREFIX}${userId}`;
+
+  try {
+    if (hasPaidAccess) {
+      window.localStorage.removeItem(countKey);
+      window.sessionStorage.removeItem(sessionKey);
+      return false;
+    }
+
+    let currentCount = Number(window.localStorage.getItem(countKey) || "0");
+    if (!Number.isFinite(currentCount) || currentCount < 0) currentCount = 0;
+
+    const alreadyCountedThisSession = window.sessionStorage.getItem(sessionKey) === "1";
+    if (!alreadyCountedThisSession) {
+      currentCount += 1;
+      window.localStorage.setItem(countKey, String(currentCount));
+      window.sessionStorage.setItem(sessionKey, "1");
+    }
+
+    return currentCount >= 2;
+  } catch {
+    return false;
+  }
+}
+
 export default function AppHomePage() {
   const { displayName, skillLevel, artInterests, resultUrl, uploadPath, uiLanguage } = useColorBestie();
   const isDutch = uiLanguage === "nl";
@@ -64,6 +95,7 @@ export default function AppHomePage() {
   const [streakDays, setStreakDays] = useState(0);
   const [creditsRemaining, setCreditsRemaining] = useState<number | null>(() => readHomeCache()?.creditsRemaining ?? null);
   const [freeTrialRemaining, setFreeTrialRemaining] = useState<number | null>(() => readHomeCache()?.freeTrialRemaining ?? null);
+  const [showNoSubBanner, setShowNoSubBanner] = useState(false);
 
   const nextMilestone = STREAK_MILESTONES.find((m) => m > streakDays) ?? null;
   const daysUntilMilestone = nextMilestone ? Math.max(0, nextMilestone - streakDays) : 0;
@@ -127,6 +159,20 @@ export default function AppHomePage() {
           setCreditsRemaining(nextCredits);
           setFreeTrialRemaining(nextTrialRemaining);
           writeHomeCache({ creditsRemaining: nextCredits, freeTrialRemaining: nextTrialRemaining });
+
+          const userId = data.user?.id;
+          if (userId) {
+            const entitlement = (data.user?.entitlement || "").toLowerCase();
+            const subscriptionStatus = (data.user?.subscriptionStatus || "").toLowerCase();
+            const hasPaidAccess =
+              entitlement === "lifetime" ||
+              subscriptionStatus === "active" ||
+              subscriptionStatus === "trialing" ||
+              subscriptionStatus === "past_due";
+            setShowNoSubBanner(shouldShowNoSubBanner(userId, hasPaidAccess));
+          } else {
+            setShowNoSubBanner(false);
+          }
         }
       } catch {
         // keep cached credits on transient failure
@@ -240,6 +286,40 @@ export default function AppHomePage() {
           </div>
         ) : null}
       </div>
+
+      {showNoSubBanner ? (
+        <div className="mb-3 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">
+            {isDutch
+              ? "Je abonnement is niet actief."
+              : isGerman
+                ? "Dein Abonnement ist nicht aktiv."
+                : isSpanish
+                  ? "Tu suscripción no está activa."
+                  : isFrench
+                    ? "Ton abonnement n'est pas actif."
+                    : "Your subscription is not active."}
+          </p>
+          <p className="mt-0.5 text-xs text-amber-800/90">
+            {isDutch
+              ? "Kies een nieuw abonnement om verder te gaan met onbeperkt genereren."
+              : isGerman
+                ? "Wähle ein neues Abo, um mit unbegrenztem Generieren fortzufahren."
+                : isSpanish
+                  ? "Elige una nueva suscripción para seguir generando sin límites."
+                  : isFrench
+                    ? "Choisis un nouvel abonnement pour continuer à générer sans limite."
+                    : "Choose a new subscription to continue generating without limits."}
+          </p>
+          <div className="mt-2">
+            <Button asChild size="sm" className="gap-2">
+              <Link href="/paywall">
+                {isDutch ? "Kies abonnement" : isGerman ? "Abo wählen" : isSpanish ? "Elegir suscripción" : isFrench ? "Choisir un abonnement" : "Choose subscription"}
+              </Link>
+            </Button>
+          </div>
+        </div>
+      ) : null}
 
       <Link href="/app/upload" className="card-nav flex-1 bg-white shadow-soft">
         <div className="relative h-full min-h-[180px] md:min-h-[240px]">
