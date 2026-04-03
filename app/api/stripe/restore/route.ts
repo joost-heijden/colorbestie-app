@@ -102,41 +102,7 @@ export async function POST() {
       return NextResponse.json({ restored: true, type: "subscription" });
     }
 
-    const payments = await stripe.paymentIntents.list({ customer: customerId, limit: 20 });
-    const successfulOneTime = payments.data.find((p) => p.status === "succeeded" && p.amount_received > 0);
-
-    if (successfulOneTime) {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          entitlement: "lifetime",
-          subscriptionStatus: "inactive",
-          subscriptionId: null,
-          currentPeriodEnd: null,
-        },
-      });
-
-      const grants = await stripe.checkout.sessions.list({ customer: customerId, limit: 20 });
-      const lifetimeCheckout = grants.data.find(
-        (s) =>
-          s.status === "complete" &&
-          s.mode === "payment" &&
-          ["paid", "no_payment_required"].includes(s.payment_status) &&
-          s.metadata?.kind !== "credits_pack"
-      );
-
-      if (lifetimeCheckout) {
-        await claimCreditGrant({
-          grantId: `checkout_session:${lifetimeCheckout.id}`,
-          userId: user.id,
-          credits: LIFETIME_PLAN_CREDITS,
-        });
-      }
-
-      return NextResponse.json({ restored: true, type: "lifetime" });
-    }
-
-    // Handle 100% discount checkouts where no payment is required.
+    // Handle one-time checkouts (including 100% discount checkouts where no payment is required).
     const checkoutSessions = await stripe.checkout.sessions.list({ customer: customerId, limit: 20 });
     const completedOneTime = checkoutSessions.data.find(
       (s) => s.status === "complete" && s.mode === "payment" && ["paid", "no_payment_required"].includes(s.payment_status)
