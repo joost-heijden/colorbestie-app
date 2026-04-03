@@ -46,7 +46,11 @@ export async function POST(request: Request) {
   const { data, error } = await supabase.storage.from("uploads").createSignedUploadUrl(path);
 
   if (error || !data?.signedUrl) {
-    return NextResponse.json({ error: error?.message ?? "Could not create signed upload URL" }, { status: 500 });
+    console.error("[upload-url] signed_url_failed", {
+      userId: currentUser.id,
+      message: error?.message ?? "unknown",
+    });
+    return NextResponse.json({ error: "Could not create signed upload URL" }, { status: 500 });
   }
 
   const baseUrl = getSupabaseStoragePublicBaseUrl();

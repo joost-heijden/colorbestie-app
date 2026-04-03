@@ -94,6 +94,6 @@ export async function POST(request: Request) {
       meta: { userId: currentUser.id, message },
     });
 
-    return NextResponse.json({ error: "Unable to start checkout", details: message }, { status: 500 });
+    return NextResponse.json({ error: "Unable to start checkout" }, { status: 500 });
   }
 }
