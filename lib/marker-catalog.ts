@@ -47,6 +47,7 @@ export const MARKER_CATALOG: MarkerBrand[] = [
           "36 Skintone",
           "48 Mid-Tone",
           "48 Pastel",
+          "48 Pastel Sweetness",
           "72",
           "104",
           "104 (Extra colors for 216)",
@@ -166,6 +167,12 @@ export const MARKER_CATALOG: MarkerBrand[] = [
     brand: "Guangna",
     series: [
       { name: "Acrylic Markers", sets: ["240"] },
+    ],
+  },
+  {
+    brand: "Gofun",
+    series: [
+      { name: "Alcohol Markers (Dual Tip)", sets: ["262"] },
     ],
   },
 ];
