@@ -11,6 +11,7 @@ import { prisma } from "@/lib/prisma";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { resolveCanonicalUserIds } from "@/lib/user-canonical";
 import { generateBodySchema } from "@/lib/validation";
+import { recoverMissingSubscriptionCredits } from "@/lib/subscription-credit-recovery";
 
 function cleanEnv(value?: string) {
   if (!value) return "";
@@ -399,7 +400,27 @@ export async function POST(request: Request) {
       )
     : 0;
 
-  const walletCredits = dbAvailable ? await getCreditBalance(generationOwnerId) : 1;
+  let walletCredits = dbAvailable ? await getCreditBalance(generationOwnerId) : 1;
+
+  if (dbAvailable && walletCredits <= 0) {
+    try {
+      await recoverMissingSubscriptionCredits({
+        userId: generationOwnerId,
+        email: currentUser.email,
+        source: "generate",
+      });
+      walletCredits = await getCreditBalance(generationOwnerId);
+    } catch (error) {
+      logEvent("warn", {
+        area: "generate",
+        event: "subscription_recovery_failed",
+        meta: {
+          userId: generationOwnerId,
+          message: error instanceof Error ? error.message.slice(0, 180) : String(error).slice(0, 180),
+        },
+      });
+    }
+  }
 
   if (usedGenerations >= FREE_TRIAL_LIMIT && walletCredits <= 0) {
     return NextResponse.json(

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/current-user";
 import { NextResponse } from "next/server";
 import { claimCreditGrant, getCreditBalance } from "@/lib/credits-wallet";
+import { recoverMissingSubscriptionCredits } from "@/lib/subscription-credit-recovery";
 
 const FREE_TRIAL_LIMIT = 2;
 
@@ -61,6 +62,13 @@ export async function GET() {
         credits: 700,
       });
     }
+
+    await recoverMissingSubscriptionCredits({
+      userId: currentUser.id,
+      email: user.email,
+      subscriptionId: user.subscriptionId,
+      source: "me",
+    });
 
     creditsRemaining = await getCreditBalance(currentUser.id);
   } catch {
