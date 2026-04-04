@@ -70,6 +70,17 @@ function creditsForSubscriptionPrice(priceId: string | null | undefined) {
   return 0;
 }
 
+function creditsForInvoiceLine(line: Stripe.InvoiceLineItem) {
+  const priceId = typeof line.price === "string" ? line.price : line.price?.id;
+  const byPriceId = creditsForSubscriptionPrice(priceId);
+  if (byPriceId > 0) return byPriceId;
+
+  const interval = typeof line.price === "string" ? null : line.price?.recurring?.interval;
+  if (interval === "month") return MONTHLY_PLAN_CREDITS;
+  if (interval === "year") return YEARLY_PLAN_CREDITS;
+  return 0;
+}
+
 export async function POST(request: Request) {
   const stripe = getStripe();
   const body = await request.text();
@@ -204,8 +215,7 @@ export async function POST(request: Request) {
 
         const lines = invoice.lines?.data ?? [];
         const creditsToAdd = lines.reduce((sum, line) => {
-          const priceId = typeof line.price === "string" ? line.price : line.price?.id;
-          const perUnit = creditsForSubscriptionPrice(priceId);
+          const perUnit = creditsForInvoiceLine(line);
           const quantity = line.quantity ?? 1;
           return sum + perUnit * quantity;
         }, 0);
@@ -236,6 +246,17 @@ export async function POST(request: Request) {
               creditsToAdd,
               applied: grant.applied,
               balance: grant.balance,
+            },
+          });
+        } else {
+          logEvent("warn", {
+            area: "stripe.webhook",
+            event: "invoice_grant_zero",
+            meta: {
+              invoiceId: invoice.id,
+              subscriptionId,
+              userId: user.id,
+              lineCount: lines.length,
             },
           });
         }
