@@ -6,6 +6,7 @@ import { Heart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { MascotBubble } from "@/components/brand/mascot-bubble";
+import { GuestAccountPrompt } from "@/components/auth/guest-account-prompt";
 import { PricingGrid } from "@/components/pricing/pricing-grid";
 import { Button } from "@/components/ui/button";
 import { DisclaimerGate } from "@/components/auth/disclaimer-gate";
@@ -428,7 +429,7 @@ export function PaywallClient({ email, alreadyUnlocked, userId }: PaywallClientP
             {isDutch ? "Upload je schets en ontvang binnen seconden een warme, praktische alcohol-marker kleurreferentie." : isGerman ? "Lade deine Skizze hoch und erhalte in Sekunden eine warme, praktische Alkoholmarker-Farbreferenz." : isSpanish ? "Sube tu boceto y recibe en segundos una referencia de color cálida y práctica para marcadores de alcohol." : "Upload your sketch and get a warm, practical alcohol-marker color reference in seconds."}
           </p>
 
-          {email ? <p className="mt-3 text-sm text-[var(--muted)]">{isDutch ? `Je bent ingelogd als ${email}` : isGerman ? `Du bist angemeldet als ${email}` : isSpanish ? `Has iniciado sesión como ${email}` : `You're signed in as ${email}`}</p> : null}
+          {email && !email.endsWith("@anonymous.colorbestie.app") ? <p className="mt-3 text-sm text-[var(--muted)]">{isDutch ? `Je bent ingelogd als ${email}` : isGerman ? `Du bist angemeldet als ${email}` : isSpanish ? `Has iniciado sesión como ${email}` : `You're signed in as ${email}`}</p> : null}
           {!alreadyUnlocked ? (
             <div className="mt-3 flex justify-center">
               <Button type="button" variant="ghost" onClick={() => void restoreAccess()} disabled={restoringAccess}>
@@ -514,6 +515,12 @@ export function PaywallClient({ email, alreadyUnlocked, userId }: PaywallClientP
             <Button asChild className="mt-6 mb-1">
               <Link href="/app">{isDutch ? "Ga naar app" : isGerman ? "Zur App" : isSpanish ? "Ir a la app" : "Go to app"}</Link>
             </Button>
+
+            {(!email || email.endsWith("@anonymous.colorbestie.app")) ? (
+              <div className="mt-5">
+                <GuestAccountPrompt lang={lang} callbackUrl="/app" variant="card" />
+              </div>
+            ) : null}
           </section>
         ) : (
           <div className="mt-12">

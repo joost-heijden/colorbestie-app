@@ -8,6 +8,7 @@ import { ArrowRight, Coins, Flame, Sparkles } from "lucide-react";
 import { MascotBubble } from "@/components/brand/mascot-bubble";
 import { Button } from "@/components/ui/button";
 import { UserBadges } from "@/components/app/user-badges";
+import { GuestAccountPrompt } from "@/components/auth/guest-account-prompt";
 import { useColorBestie } from "@/components/app/colorbestie-provider";
 import { getLearnProgress, updateStreak } from "@/lib/learn-progress";
 
@@ -86,7 +87,8 @@ function shouldShowNoSubBanner(userId: string, hasPaidAccess: boolean) {
 }
 
 export default function AppHomePage() {
-  const { displayName, skillLevel, artInterests, resultUrl, uploadPath, uiLanguage } = useColorBestie();
+  const { displayName, email, skillLevel, artInterests, resultUrl, uploadPath, uiLanguage } = useColorBestie();
+  const isGuest = !email || email.endsWith("@anonymous.colorbestie.app");
   const isDutch = uiLanguage === "nl";
   const isGerman = uiLanguage === "de";
   const isSpanish = uiLanguage === "es";
@@ -332,6 +334,12 @@ export default function AppHomePage() {
           </div>
         </div>
       </Link>
+
+      {isGuest ? (
+        <div className="mt-3">
+          <GuestAccountPrompt lang={uiLanguage} callbackUrl="/app" variant="banner" />
+        </div>
+      ) : null}
 
       {recent.length > 0 ? (
         <div className="mt-3">
