@@ -19,7 +19,9 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
   // After login callback: user just authenticated to complete onboarding — don't redirect to /app yet
   const isCompletingOnboarding = signedInParam === "1";
 
-  if (currentUser?.id && !isMarkerEditMode && !isCompletingOnboarding) {
+  // Only redirect fully-authenticated (non-guest) users who aren't editing or completing onboarding
+  const isRealUser = currentUser?.id && currentUser.source !== "guest";
+  if (isRealUser && !isMarkerEditMode && !isCompletingOnboarding) {
     redirect("/app");
   }
 

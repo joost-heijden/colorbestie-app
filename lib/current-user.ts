@@ -1,14 +1,17 @@
+import { cookies } from "next/headers";
 import { auth } from "@/auth";
 import { logEvent } from "@/lib/monitoring";
 import { prisma } from "@/lib/prisma";
 import { getSupabaseServerAuthClient } from "@/lib/supabase-auth-server";
+
+const GUEST_COOKIE = "colorbestie-guest-id";
 
 export type CurrentUser = {
   id: string;
   email: string;
   name: string | null;
   image: string | null;
-  source: "supabase" | "nextauth";
+  source: "supabase" | "nextauth" | "guest";
 };
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -155,26 +158,79 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   }
 
   // Last fallback: NextAuth session by email -> db user lookup
-  if (!session?.user?.email) return null;
+  if (session?.user?.email) {
+    try {
+      const dbUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { id: true, email: true, name: true, image: true },
+      });
 
+      if (dbUser) {
+        if (process.env.AUTH_DEBUG_LOGS === "1") {
+          logEvent("warn", { area: "auth", event: "current_user.nextauth_email_fallback", meta: { userId: dbUser.id } });
+        }
+
+        return {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          image: dbUser.image,
+          source: "nextauth" as const,
+        };
+      }
+    } catch {
+      // continue to guest fallback
+    }
+  }
+
+  // Guest fallback: anonymous user via cookie (Apple guideline 5.1.1(v) compliance)
+  return getOrCreateGuestUser();
+}
+
+async function getOrCreateGuestUser(): Promise<CurrentUser | null> {
   try {
-    const dbUser = await prisma.user.findUnique({
-      where: { email: session.user.email },
+    const cookieStore = await cookies();
+    const guestId = cookieStore.get(GUEST_COOKIE)?.value;
+    if (!guestId) return null;
+
+    // Validate UUID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(guestId)) {
+      return null;
+    }
+
+    const existing = await prisma.user.findUnique({
+      where: { id: guestId },
       select: { id: true, email: true, name: true, image: true },
     });
 
-    if (!dbUser) return null;
-
-    if (process.env.AUTH_DEBUG_LOGS === "1") {
-      logEvent("warn", { area: "auth", event: "current_user.nextauth_email_fallback", meta: { userId: dbUser.id } });
+    if (existing) {
+      return {
+        id: existing.id,
+        email: existing.email,
+        name: existing.name,
+        image: existing.image,
+        source: "guest" as const,
+      };
     }
+
+    // Create guest user on first access
+    const guestEmail = `guest-${guestId.slice(0, 8)}@anonymous.colorbestie.app`;
+    const dbUser = await prisma.user.create({
+      data: {
+        id: guestId,
+        email: guestEmail,
+        name: null,
+        image: null,
+      },
+      select: { id: true, email: true, name: true, image: true },
+    });
 
     return {
       id: dbUser.id,
       email: dbUser.email,
       name: dbUser.name,
       image: dbUser.image,
-      source: "nextauth",
+      source: "guest" as const,
     };
   } catch {
     return null;

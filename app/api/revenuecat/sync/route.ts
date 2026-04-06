@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { getCurrentUser } from "@/lib/current-user";
 import { prisma } from "@/lib/prisma";
 
 // ---------------------------------------------------------------------------
@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 // Called by the client after a RevenueCat purchase completes.
 // The client sends the customerInfo so we can immediately update
 // the user's entitlement without waiting for the webhook.
+// Supports both authenticated and guest users (Apple guideline 5.1.1(v)).
 // ---------------------------------------------------------------------------
 
 const RC_API_KEY = process.env.REVENUECAT_API_SECRET || "";
@@ -18,12 +19,12 @@ type SyncBody = {
 };
 
 export async function POST(request: Request) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const currentUser = await getCurrentUser();
+  if (!currentUser?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const userId = session.user.id;
+  const userId = currentUser.id;
 
   let body: SyncBody;
   try {

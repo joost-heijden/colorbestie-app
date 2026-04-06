@@ -9,7 +9,10 @@ import { prisma } from "@/lib/prisma";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const currentUser = await getCurrentUser();
-  if (!currentUser?.id) redirect("/login");
+
+  // Guest users (anonymous) are allowed — Apple guideline 5.1.1(v) compliance.
+  // Only redirect if we truly have no user at all (e.g. cookie blocked).
+  if (!currentUser?.id) redirect("/onboarding");
 
   const dbUser = await prisma.user.findUnique({
     where: { id: currentUser.id },
