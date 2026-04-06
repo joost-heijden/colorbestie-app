@@ -68,24 +68,35 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing event data" }, { status: 400 });
   }
 
-  // app_user_id should be the user's UUID from our system
+  // app_user_id should be the user's UUID from our system (or guest UUID).
+  // For anonymous RevenueCat users, app_user_id may be an RC-generated ID like "$RCAnonymousID:..."
   const userId = event.app_user_id;
 
-  // Verify user exists
-  const user = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
+  // Verify user exists — try app_user_id, then original_app_user_id, then subscriptionId lookup
+  let user = await prisma.user.findUnique({ where: { id: userId } }).catch(() => null);
   if (!user) {
-    // Try original_app_user_id as fallback
-    const fallbackUser = await prisma.user
+    user = await prisma.user
       .findUnique({ where: { id: event.original_app_user_id } })
       .catch(() => null);
-    if (!fallbackUser) {
-      console.warn(`[revenuecat-webhook] User not found: ${userId}`);
-      // Return 200 to prevent retries for unknown users
-      return NextResponse.json({ ok: true, skipped: true });
-    }
+  }
+  if (!user) {
+    // Try finding by subscriptionId (handles RC anonymous IDs linked to existing users)
+    user = await prisma.user
+      .findFirst({ where: { subscriptionId: `rc_${userId}` } })
+      .catch(() => null);
+  }
+  if (!user) {
+    user = await prisma.user
+      .findFirst({ where: { subscriptionId: `rc_${event.original_app_user_id}` } })
+      .catch(() => null);
+  }
+  if (!user) {
+    console.warn(`[revenuecat-webhook] User not found: ${userId} / ${event.original_app_user_id}`);
+    // Return 200 to prevent retries for unknown users
+    return NextResponse.json({ ok: true, skipped: true });
   }
 
-  const resolvedUserId = user?.id || event.original_app_user_id;
+  const resolvedUserId = user.id;
 
   try {
     switch (event.type) {

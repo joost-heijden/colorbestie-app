@@ -53,6 +53,7 @@ export function PaywallClient({ email, alreadyUnlocked, userId }: PaywallClientP
   const [isNative, setIsNative] = useState(false);
   const [rcOffering, setRcOffering] = useState<RCOffering | null>(null);
   const [rcReady, setRcReady] = useState(false);
+  const [rcError, setRcError] = useState(false);
 
   const isDutch = lang === "nl";
   const isGerman = lang === "de";
@@ -60,29 +61,30 @@ export function PaywallClient({ email, alreadyUnlocked, userId }: PaywallClientP
   const isFrench = lang === "fr";
 
   // --- Detect platform + initialise RevenueCat on native iOS ---
+  const loadRevenueCatOfferings = async (rcUserId?: string) => {
+    try {
+      setRcError(false);
+      await configureRevenueCat(rcUserId);
+      const offering = await getOfferings();
+      if (offering) {
+        setRcOffering(offering);
+        setRcReady(true);
+      } else {
+        console.warn("[paywall] RevenueCat returned no offerings");
+        setRcError(true);
+      }
+    } catch (err) {
+      console.error("[paywall] RevenueCat init failed:", err);
+      setRcError(true);
+    }
+  };
+
   useEffect(() => {
     const native = isNativeIOS();
     setIsNative(native);
 
     if (native) {
-      void (async () => {
-        try {
-          // Configure with userId when available; uses anonymous ID otherwise.
-          // Products must load even before the user has logged in.
-          await configureRevenueCat(userId);
-          const offering = await getOfferings();
-          if (offering) {
-            setRcOffering(offering);
-            setRcReady(true);
-          } else {
-            console.warn("[paywall] RevenueCat returned no offerings");
-            toast(isDutch ? "Producten konden niet geladen worden. Probeer later opnieuw." : isGerman ? "Produkte konnten nicht geladen werden. Bitte versuche es später erneut." : isSpanish ? "No se pudieron cargar los productos. Inténtalo más tarde." : "Could not load products. Please try again later.");
-          }
-        } catch (err) {
-          console.error("[paywall] RevenueCat init failed:", err);
-          toast(isDutch ? "Er ging iets mis bij het laden van de producten." : isGerman ? "Beim Laden der Produkte ist ein Fehler aufgetreten." : isSpanish ? "Algo salió mal al cargar los productos." : "Something went wrong loading products.");
-        }
-      })();
+      void loadRevenueCatOfferings(userId);
     }
   }, [userId]);
 
@@ -340,12 +342,16 @@ export function PaywallClient({ email, alreadyUnlocked, userId }: PaywallClientP
         }
 
         if (result.success) {
-          // Sync entitlement to our backend
-          await fetch("/api/revenuecat/sync", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ rcUserId: userId }),
-          });
+          // Sync entitlement to our backend (best-effort; webhook is the fallback)
+          try {
+            await fetch("/api/revenuecat/sync", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ rcUserId: userId }),
+            });
+          } catch {
+            // Sync failure is OK — the RevenueCat webhook will process it
+          }
 
           toast(isDutch ? "Aankoop geslaagd! Herladen..." : isGerman ? "Kauf erfolgreich! Neu laden..." : isSpanish ? "Compra exitosa! Recargando..." : "Purchase successful! Reloading...");
           window.setTimeout(() => {
@@ -512,9 +518,25 @@ export function PaywallClient({ email, alreadyUnlocked, userId }: PaywallClientP
         ) : (
           <div className="mt-12">
             {isNative && !rcReady ? (
-              <p className="text-center text-sm text-[var(--muted)]">
-                {isDutch ? "Producten laden..." : isGerman ? "Produkte werden geladen..." : isSpanish ? "Cargando productos..." : "Loading products..."}
-              </p>
+              rcError ? (
+                <div className="text-center">
+                  <p className="text-sm text-[var(--muted)]">
+                    {isDutch ? "Producten konden niet geladen worden." : isGerman ? "Produkte konnten nicht geladen werden." : isSpanish ? "No se pudieron cargar los productos." : "Could not load products."}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="mt-3"
+                    onClick={() => void loadRevenueCatOfferings(userId)}
+                  >
+                    {isDutch ? "Opnieuw proberen" : isGerman ? "Erneut versuchen" : isSpanish ? "Reintentar" : "Try again"}
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-center text-sm text-[var(--muted)]">
+                  {isDutch ? "Producten laden..." : isGerman ? "Produkte werden geladen..." : isSpanish ? "Cargando productos..." : "Loading products..."}
+                </p>
+              )
             ) : (
               <>
                 <PricingGrid onContinue={startCheckout} loadingPlan={loadingPlan} disabled={isNative && !rcReady} prices={displayPrices} lang={lang} />

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
+const GUEST_COOKIE = "colorbestie-guest-id";
+
 type RateRule = {
   key: string;
   methods: string[];
@@ -159,11 +161,33 @@ export async function middleware(req: NextRequest) {
       .some((cookie) => cookie.name.startsWith("sb-") && cookie.name.includes("auth-token"));
 
     if (token?.uid || hasSupabaseSessionCookie) {
-      return applySecurityHeaders(req, NextResponse.redirect(new URL("/app", req.url)));
+      // Allow authenticated users to stay on onboarding if editing markers or completing flow
+      const edit = req.nextUrl.searchParams.get("edit");
+      const signedIn = req.nextUrl.searchParams.get("signedIn");
+      const step = req.nextUrl.searchParams.get("step");
+      if (edit === "markers" || signedIn === "1" || step === "5") {
+        // Let them through
+      } else {
+        return applySecurityHeaders(req, NextResponse.redirect(new URL("/app", req.url)));
+      }
     }
   }
 
-  return applySecurityHeaders(req, NextResponse.next());
+  // Ensure every visitor has a guest ID cookie for anonymous access.
+  // This enables free trial usage and IAP without forced registration (Apple guideline 5.1.1(v)).
+  const response = applySecurityHeaders(req, NextResponse.next());
+  if (!req.cookies.get(GUEST_COOKIE)?.value) {
+    const guestId = crypto.randomUUID();
+    response.cookies.set(GUEST_COOKIE, guestId, {
+      path: "/",
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 365, // 1 year
+    });
+  }
+
+  return response;
 }
 
 export const config = {

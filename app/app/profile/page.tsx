@@ -48,6 +48,7 @@ export default function ProfilePage() {
   });
   const [wakeLockRef, setWakeLockRef] = useState<WakeLockSentinel | null>(null);
   const nativeIOS = useMemo(() => isNativeIOS(), []);
+  const isGuest = !email || email.endsWith("@anonymous.colorbestie.app");
   const isDutch = uiLanguage === "nl";
   const isGerman = uiLanguage === "de";
   const isSpanish = uiLanguage === "es";
@@ -555,7 +556,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4">
+      {!isGuest ? <div className="mt-6 rounded-2xl border border-rose-200 bg-rose-50 p-4">
         <div className="flex items-start gap-3">
           <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl bg-white text-rose-600">
             <AlertTriangle className="h-5 w-5" />
@@ -587,13 +588,21 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </div>
+      </div> : null}
 
       <div className="mt-auto pt-4">
-        <Button size="lg" onClick={() => void handleSignOut()} className="w-full gap-2 bg-[var(--accent-bg)] text-[var(--text)] hover:bg-[var(--accent-bg-hover)]">
-          <LogOut className="h-4 w-4" />
-          {isDutch ? "Uitloggen" : isGerman ? "Abmelden" : isSpanish ? "Cerrar sesión" : "Sign Out"}
-        </Button>
+        {isGuest ? (
+          <Button asChild size="lg" className="w-full gap-2">
+            <Link href="/login?callbackUrl=%2Fapp">
+              {isDutch ? "Log in om je data te synchroniseren" : isGerman ? "Anmelden, um deine Daten zu synchronisieren" : isSpanish ? "Inicia sesión para sincronizar tus datos" : "Sign in to sync your data across devices"}
+            </Link>
+          </Button>
+        ) : (
+          <Button size="lg" onClick={() => void handleSignOut()} className="w-full gap-2 bg-[var(--accent-bg)] text-[var(--text)] hover:bg-[var(--accent-bg-hover)]">
+            <LogOut className="h-4 w-4" />
+            {isDutch ? "Uitloggen" : isGerman ? "Abmelden" : isSpanish ? "Cerrar sesión" : "Sign Out"}
+          </Button>
+        )}
       </div>
     </div>
   );

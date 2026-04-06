@@ -158,7 +158,10 @@ export function OnboardingFlow() {
         return;
       }
 
-      router.push("/login?callbackUrl=%2Fonboarding%3FsignedIn%3D1");
+      // Save onboarding data (works for both authenticated and guest users)
+      // and proceed to notifications step — no login required (Apple guideline 5.1.1(v))
+      void saveOnboarding(data.markerSelections);
+      next();
       return;
     }
 
